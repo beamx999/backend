@@ -5,13 +5,13 @@ const pool = require("../config/db");
 let userToken = "";
 // สุ่ม username เพื่อไม่ให้ซ้ำเวลา test หลายรอบ
 const testUser = {
-  firstname: "Jirapat",
-  fullname: "Jirapat Test",
+  firstname: "Thanakit",
+  fullname: "Thanakit Test",
   lastname: "Dev",
   username: `user_${Date.now()}`,
-  password: "password123",
+  password: "p@ssw0rd123",
   address: "Chiang Mai",
-  phone: "0812345678",
+  phone: "0123456789",
   email: "test@example.com",
 };
 
