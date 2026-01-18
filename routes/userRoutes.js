@@ -209,7 +209,7 @@ router.post("/", async (req, res) => {
  * @swagger
  * /api/users/{id}:
  *   put:
- *     summary: แก้ไขข้อมูลผู้ใช้งาน (รวม username และ password)
+ *     summary: แก้ไขข้อมูลผู้ใช้งาน
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -226,10 +226,6 @@ router.post("/", async (req, res) => {
  *           schema:
  *             type: object
  *             properties:
- *               username:
- *                 type: string
- *               password:
- *                 type: string
  *               firstname:
  *                 type: string
  *               fullname:
@@ -245,97 +241,30 @@ router.post("/", async (req, res) => {
  *     responses:
  *       200:
  *         description: อัปเดตข้อมูลสำเร็จ
- *       400:
- *         description: Username ซ้ำ
- *       404:
- *         description: ไม่พบผู้ใช้งาน
  */
 router.put("/:id", auth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { 
-      username, 
-      password, 
-      firstname, 
-      fullname, 
-      lastname, 
-      address, 
-      sex, 
-      birthday 
-    } = req.body;
-
-    // ตรวจสอบว่า user มีอยู่จริงหรือไม่
-    const [userCheck] = await pool.query(
-      "SELECT id FROM tbl_users WHERE id = ?",
-      [id]
-    );
-
-    if (userCheck.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // ตรวจสอบว่า username ซ้ำหรือไม่ (ยกเว้น user ตัวเอง)
-    if (username) {
-      const [check] = await pool.query(
-        "SELECT id FROM tbl_users WHERE username = ? AND id != ?",
-        [username, id]
-      );
-
-      if (check.length > 0) {
-        return res.status(400).json({ message: "Username นี้มีผู้ใช้งานแล้ว" });
-      }
-    }
-
-    // เตรียม SQL query แบบ dynamic
-    let updateFields = [];
-    let updateValues = [];
-
-    if (firstname !== undefined) {
-      updateFields.push("firstname = ?");
-      updateValues.push(firstname);
-    }
-    if (fullname !== undefined) {
-      updateFields.push("fullname = ?");
-      updateValues.push(fullname);
-    }
-    if (lastname !== undefined) {
-      updateFields.push("lastname = ?");
-      updateValues.push(lastname);
-    }
-    if (username !== undefined) {
-      updateFields.push("username = ?");
-      updateValues.push(username);
-    }
-    if (password !== undefined && password !== '') {
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-      updateFields.push("password = ?");
-      updateValues.push(hashedPassword);
-    }
-    if (address !== undefined) {
-      updateFields.push("address = ?");
-      updateValues.push(address);
-    }
-    if (sex !== undefined) {
-      updateFields.push("sex = ?");
-      updateValues.push(sex);
-    }
-    if (birthday !== undefined) {
-      updateFields.push("birthday = ?");
-      updateValues.push(birthday);
-    }
-
-    // ถ้าไม่มีอะไรจะ update
-    if (updateFields.length === 0) {
-      return res.status(400).json({ message: "ไม่มีข้อมูลที่จะอัปเดต" });
-    }
-
-    updateValues.push(id);
+    const { firstname, fullname, lastname, address, sex, birthday } = req.body;
 
     const [result] = await pool.query(
-      `UPDATE tbl_users SET ${updateFields.join(", ")} WHERE id = ?`,
-      updateValues
+      `
+      UPDATE tbl_users
+      SET
+        firstname = ?,
+        fullname  = ?,
+        lastname  = ?,
+        address   = ?,
+        sex       = ?,
+        birthday  = ?
+      WHERE id = ?
+      `,
+      [firstname, fullname, lastname, address, sex, birthday, id]
     );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
     res.json({ message: "User updated successfully" });
   } catch (err) {
